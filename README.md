@@ -79,3 +79,9 @@ PYTHONPATH=src python -m devops_toolkit.checker http://127.0.0.1:8765/missing
 
 The simulated incident and its investigation are documented in
 [`docs/post-mortem.md`](docs/post-mortem.md).
+
+For on-demand profiling, use the standard Python library:
+
+```bash
+PYTHONPATH=src python -m cProfile -s cumulative -m devops_toolkit.checker https://example.com
+```
