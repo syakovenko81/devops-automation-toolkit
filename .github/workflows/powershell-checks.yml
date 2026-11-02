@@ -30,6 +30,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $false
           $env:PYTHONPATH = "src"
 
           function Invoke-ResourceCheck {
@@ -61,3 +62,5 @@ jobs:
           Invoke-ResourceCheck 2 @("http://127.0.0.1:1")
           Invoke-ResourceCheck 2 @("https://expired.badssl.com")
           Invoke-ResourceCheck 2 @("https://httpbin.org/delay/10", "--timeout", "0.1")
+
+          exit 0
