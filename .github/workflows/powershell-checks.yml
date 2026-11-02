@@ -1,0 +1,63 @@
+name: PowerShell resource checks
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-resources:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install -e .
+
+      - name: Run resource checks from PowerShell
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $env:PYTHONPATH = "src"
+
+          function Invoke-ResourceCheck {
+              param(
+                  [int]$ExpectedExitCode,
+                  [string[]]$Arguments
+              )
+
+              & python -m devops_toolkit.checker @Arguments
+              $actualExitCode = $LASTEXITCODE
+
+              if ($actualExitCode -ne $ExpectedExitCode) {
+                  throw "Expected exit code $ExpectedExitCode, got $actualExitCode"
+              }
+          }
+
+          Invoke-ResourceCheck 0 @("https://example.com")
+          Invoke-ResourceCheck 0 @("https://httpbin.org/status/200")
+          Invoke-ResourceCheck 0 @("https://httpbin.org/status/201")
+          Invoke-ResourceCheck 0 @("https://httpbin.org/status/204")
+          Invoke-ResourceCheck 1 @("https://httpbin.org/status/400")
+          Invoke-ResourceCheck 1 @("https://httpbin.org/status/404")
+          Invoke-ResourceCheck 1 @("https://httpbin.org/status/500")
+          Invoke-ResourceCheck 2 @("example.com")
+          Invoke-ResourceCheck 2 @("ftp://example.com")
+          Invoke-ResourceCheck 2 @("http://")
+          Invoke-ResourceCheck 2 @("https://example.com", "--timeout", "0")
+          Invoke-ResourceCheck 2 @("https://does-not-exist.invalid")
+          Invoke-ResourceCheck 2 @("http://127.0.0.1:1")
+          Invoke-ResourceCheck 2 @("https://expired.badssl.com")
+          Invoke-ResourceCheck 2 @("https://httpbin.org/delay/10", "--timeout", "0.1")

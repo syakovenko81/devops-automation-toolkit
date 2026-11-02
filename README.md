@@ -114,3 +114,17 @@ in [`src/devops_toolkit/errors.py`](src/devops_toolkit/errors.py). Each error
 keeps its category and request context, while exception chaining preserves the
 original cause for DEBUG logging. The public `check_url()` result remains a
 small dictionary with a user-friendly message.
+
+## Cross-shell checks
+
+The project uses Python for the checker, Bash for Linux automation, and
+PowerShell for Windows automation. Bash is used on `ubuntu-latest` because it
+matches the common Linux shell environment. PowerShell is used on
+`windows-latest` because it is the native Windows automation shell.
+
+The two workflows run the same success, HTTP error, invalid URL, DNS,
+connection, SSL, and timeout scenarios. Both are triggered on `push` and can
+also be started manually with `workflow_dispatch`:
+
+- [`bash-checks.yml`](.github/workflows/bash-checks.yml)
+- [`powershell-checks.yml`](.github/workflows/powershell-checks.yml)
