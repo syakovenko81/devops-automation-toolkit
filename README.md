@@ -87,7 +87,7 @@ PYTHONPATH=src python -m pytest --cov=src/devops_toolkit --cov-report=term-missi
 Pull requests targeting `main` run the same test suite with a 95% coverage
 threshold in [`test-coverage.yml`](.github/workflows/test-coverage.yml). The
 workflow also adds the aggregate line coverage and threshold to the GitHub
-Actions Step Summary.
+Actions Step Summary and updates one dedicated coverage comment in the PR.
 
 ## Diagnostics
 
@@ -128,8 +128,8 @@ matches the common Linux shell environment. PowerShell is used on
 `windows-latest` because it is the native Windows automation shell.
 
 The two workflows run the same success, HTTP error, invalid URL, DNS,
-connection, SSL, and timeout scenarios. Both are triggered on `push` and can
-also be started manually with `workflow_dispatch`:
+connection, SSL, and timeout scenarios. Both are triggered by pushes to
+`main` and can also be started manually with `workflow_dispatch`:
 
 - [`bash-checks.yml`](.github/workflows/bash-checks.yml)
 - [`powershell-checks.yml`](.github/workflows/powershell-checks.yml)
