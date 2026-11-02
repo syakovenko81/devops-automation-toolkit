@@ -2,6 +2,8 @@ name: PowerShell resource checks
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:

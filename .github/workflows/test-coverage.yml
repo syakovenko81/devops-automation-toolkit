@@ -1,0 +1,87 @@
+name: Test coverage
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install -e .
+
+      - name: Run tests with coverage
+        env:
+          PYTHONPATH: src
+        run: >-
+          python -m pytest
+          --cov=src/devops_toolkit
+          --cov-report=term-missing
+          --cov-report=xml:coverage.xml
+          --cov-fail-under=95
+
+      - name: Add coverage summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ ! -f coverage.xml ]]; then
+            python -c 'print("## Test coverage"); print(); print("Coverage report was not generated because the test command did not complete.")' > coverage-summary.md
+          else
+            python -c 'import xml.etree.ElementTree as element_tree; root = element_tree.parse("coverage.xml").getroot(); line_rate = float(root.attrib["line-rate"]) * 100; lines_covered = root.attrib["lines-covered"]; lines_valid = root.attrib["lines-valid"]; print("## Test coverage"); print(); print("| Metric | Result |"); print("| --- | ---: |"); print(f"| Line coverage | **{line_rate:.2f}%** |"); print(f"| Covered lines | {lines_covered}/{lines_valid} |"); print("| Required threshold | 95% |")' > coverage-summary.md
+          fi
+
+          cat coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment coverage on pull request
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- devops-toolkit-coverage -->';
+            const report = fs.readFileSync('coverage-summary.md', 'utf8');
+            const body = `${marker}\n${report}`;
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue.number;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: issueNumber, per_page: 100 }
+            );
+            const existingComment = comments.find(
+              (comment) => comment.body && comment.body.includes(marker)
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body,
+              });
+            }
