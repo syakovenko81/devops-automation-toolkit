@@ -12,6 +12,13 @@ The project uses `requests` for HTTP checks and pytest for tests.
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+The editable install exposes the package through its versioned public API:
+
+```python
+from devops_toolkit import check_url
 ```
 
 ## Run the checker
@@ -46,6 +53,17 @@ if result["result"]:
 else:
     print(result["error_type"], result["message"])
 ```
+
+The result dictionary has a stable small contract:
+
+- `result` — `True` for a successful HTTP response, otherwise `False`;
+- `status_code` — the HTTP status or `None` when no response was received;
+- `response_time` — elapsed request time in seconds;
+- `message` — a user-facing result description;
+- `trace_id` — the identifier for correlating one check in logs;
+- `error_type` — present for failed checks.
+
+The package version is available as `devops_toolkit.__version__`.
 
 Run the example from the project root:
 

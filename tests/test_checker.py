@@ -11,6 +11,12 @@ SOURCE_DIR = os.path.join(os.path.dirname(__file__), "..", "src")
 if SOURCE_DIR not in sys.path:
     sys.path.insert(0, SOURCE_DIR)
 
+from devops_toolkit import (  # noqa: E402
+    ErrorDescription as PublicErrorDescription,
+    ResourceCheckError as PublicResourceCheckError,
+    __version__,
+    check_url as public_check_url,
+)
 from devops_toolkit.checker import ErrorDescription, check_url, main  # noqa: E402
 from devops_toolkit.errors import ResourceCheckError, ResourceTimeoutError  # noqa: E402
 
@@ -30,6 +36,13 @@ def test_error_description_contains_error_types_and_messages():
     assert ErrorDescription.get_message(ErrorDescription.HTTP, "Not Found", 404, "Not Found") == "HTTP error 404: Not Found"
     assert ErrorDescription.get_message(ErrorDescription.TIMEOUT, "request timed out") == "Request timeout: resource did not respond in time"
     assert ErrorDescription.get_message(ErrorDescription.CONNECTION, "Failed to resolve host") == "DNS error: unable to resolve host"
+
+
+def test_package_exposes_stable_public_api():
+    assert __version__ == "0.1.0"
+    assert public_check_url is check_url
+    assert PublicErrorDescription is ErrorDescription
+    assert PublicResourceCheckError is ResourceCheckError
 
 
 def test_error_description_creates_typed_error_with_context():
