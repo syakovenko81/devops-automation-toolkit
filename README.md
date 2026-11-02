@@ -84,6 +84,11 @@ PYTHONPATH=src python -m pytest -q
 PYTHONPATH=src python -m pytest --cov=src/devops_toolkit --cov-report=term-missing
 ```
 
+Pull requests targeting `main` run the same test suite with a 95% coverage
+threshold in [`test-coverage.yml`](.github/workflows/test-coverage.yml). The
+workflow also adds the aggregate line coverage and threshold to the GitHub
+Actions Step Summary.
+
 ## Diagnostics
 
 The checker logs the URL, HTTP status, response time, error category, and a
