@@ -68,7 +68,10 @@ PYTHONPATH=src python -m pytest --cov=src/devops_toolkit --cov-report=term-missi
 
 ## Diagnostics
 
-The checker logs the URL, HTTP status, response time, and error category.
+The checker logs the URL, HTTP status, response time, error category, and a
+`trace_id` that connects validation, request, and result messages for one
+check. This is local request correlation, not distributed OpenTelemetry
+tracing.
 
 To reproduce an HTTP error locally:
 
@@ -80,10 +83,12 @@ PYTHONPATH=src python -m devops_toolkit.checker http://127.0.0.1:8765/missing
 The simulated incident and its investigation are documented in
 [`docs/post-mortem.md`](docs/post-mortem.md).
 
-For on-demand profiling, use the standard Python library:
+For on-demand profiling, save a profile artifact and inspect the cumulative
+hotspots with the standard Python library:
 
 ```bash
-PYTHONPATH=src python -m cProfile -s cumulative -m devops_toolkit.checker https://example.com
+PYTHONPATH=src python -m cProfile -o /tmp/devops-checker.prof -m devops_toolkit.checker https://example.com
+python -c "import pstats; pstats.Stats('/tmp/devops-checker.prof').sort_stats('cumulative').print_stats(20)"
 ```
 
 The checker converts low-level `requests` exceptions into typed domain errors

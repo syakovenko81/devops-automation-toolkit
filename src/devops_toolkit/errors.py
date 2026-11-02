@@ -3,11 +3,12 @@ class ResourceCheckError(Exception):
 
     error_type = "request_error"
 
-    def __init__(self, message, *, url=None, status_code=None):
+    def __init__(self, message, *, url=None, status_code=None, trace_id=None):
         super().__init__(message)
         self.message = message
         self.url = url
         self.status_code = status_code
+        self.trace_id = trace_id
 
 
 class InvalidInputError(ResourceCheckError):
@@ -79,13 +80,34 @@ class ErrorDescription:
         return messages[error_type]
 
     @classmethod
-    def create_error(cls, error_type, error, url=None, status_code=None, reason=None):
+    def create_error(
+        cls,
+        error_type,
+        error,
+        url=None,
+        status_code=None,
+        reason=None,
+        trace_id=None,
+    ):
         message = cls.get_message(error_type, error, status_code, reason)
         error_class = cls._ERROR_CLASSES[error_type]
-        return error_class(message, url=url, status_code=status_code)
+        return error_class(
+            message,
+            url=url,
+            status_code=status_code,
+            trace_id=trace_id,
+        )
 
     @classmethod
-    def raise_from(cls, error_type, cause, url=None, status_code=None, reason=None):
+    def raise_from(
+        cls,
+        error_type,
+        cause,
+        url=None,
+        status_code=None,
+        reason=None,
+        trace_id=None,
+    ):
         """Raise a domain error while preserving the low-level cause."""
         raise cls.create_error(
             error_type,
@@ -93,4 +115,5 @@ class ErrorDescription:
             url=url,
             status_code=status_code,
             reason=reason,
+            trace_id=trace_id,
         ) from cause

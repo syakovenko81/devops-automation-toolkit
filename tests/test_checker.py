@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -36,12 +37,14 @@ def test_error_description_creates_typed_error_with_context():
         ErrorDescription.TIMEOUT,
         "request timed out",
         url="https://example.com",
+        trace_id="trace-123",
     )
 
     assert isinstance(error, ResourceTimeoutError)
     assert isinstance(error, ResourceCheckError)
     assert error.error_type == ErrorDescription.TIMEOUT
     assert error.url == "https://example.com"
+    assert error.trace_id == "trace-123"
     assert error.message == "Request timeout: resource did not respond in time"
 
 
@@ -49,9 +52,15 @@ def test_error_description_preserves_original_cause():
     cause = requests.exceptions.Timeout("request timed out")
 
     with pytest.raises(ResourceTimeoutError) as caught:
-        ErrorDescription.raise_from(ErrorDescription.TIMEOUT, cause, url="https://example.com")
+        ErrorDescription.raise_from(
+            ErrorDescription.TIMEOUT,
+            cause,
+            url="https://example.com",
+            trace_id="trace-123",
+        )
 
     assert caught.value.__cause__ is cause
+    assert caught.value.trace_id == "trace-123"
 
 
 def test_check_url_success_returns_status_and_response_time():
@@ -63,6 +72,18 @@ def test_check_url_success_returns_status_and_response_time():
     assert result["result"] is True
     assert result["status_code"] == 200
     assert result["response_time"] == 0.125
+    assert len(result["trace_id"]) == 32
+
+
+def test_check_url_uses_trace_id_for_debug_stages(caplog):
+    caplog.set_level(logging.DEBUG)
+
+    with patch("devops_toolkit.checker.requests.get", return_value=_response(200)):
+        result = check_url("https://example.com")
+
+    assert f"trace_id={result['trace_id']}" in caplog.text
+    assert "stage=validation" in caplog.text
+    assert "stage=request" in caplog.text
 
 
 @pytest.mark.parametrize("status_code", [201, 204, 301])
@@ -125,6 +146,7 @@ def test_check_url_handles_dns_or_connection_error():
     assert result["result"] is False
     assert result["error_type"] == "connection_error"
     assert result["message"] == "DNS error: unable to resolve host"
+    assert result["trace_id"]
 
 
 def test_check_url_handles_connection_error():

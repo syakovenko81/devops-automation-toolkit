@@ -56,8 +56,14 @@ short while DEBUG logs can retain the technical cause.
 This keeps error classification in one place without adding retries or
 recovery behavior that would be inappropriate for every resource check.
 
+Each check also receives a `trace_id`. Validation, request, result, and error
+logs use the same identifier, which makes one check easy to follow during a
+debugging session. This is intentionally local request correlation rather
+than distributed tracing.
+
 ## Scope and limitations
 
 The project does not implement distributed tracing, OpenTelemetry, or a remote
-incident system. The `cProfile` command is an on-demand diagnostic example,
-not continuous production profiling.
+incident system. Profiling is on demand: the documented command creates a
+`.prof` artifact that can be inspected with `pstats`; it is not continuous
+production profiling.
