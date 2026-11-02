@@ -87,7 +87,9 @@ PYTHONPATH=src python -m pytest --cov=src/devops_toolkit --cov-report=term-missi
 Pull requests targeting `main` run the same test suite with a 95% coverage
 threshold in [`test-coverage.yml`](.github/workflows/test-coverage.yml). The
 workflow also adds the aggregate line coverage and threshold to the GitHub
-Actions Step Summary and updates one dedicated coverage comment in the PR.
+Actions Step Summary and updates one dedicated coverage comment in the PR. For
+pull requests from forks, GitHub restricts write permissions for the token, so
+the result is available in the workflow Summary instead of a PR comment.
 
 ## Diagnostics
 
