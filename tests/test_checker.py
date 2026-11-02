@@ -11,6 +11,7 @@ if SOURCE_DIR not in sys.path:
     sys.path.insert(0, SOURCE_DIR)
 
 from devops_toolkit.checker import ErrorDescription, check_url, main  # noqa: E402
+from devops_toolkit.errors import ResourceCheckError, ResourceTimeoutError  # noqa: E402
 
 
 def _response(status_code, reason="OK"):
@@ -28,6 +29,29 @@ def test_error_description_contains_error_types_and_messages():
     assert ErrorDescription.get_message(ErrorDescription.HTTP, "Not Found", 404, "Not Found") == "HTTP error 404: Not Found"
     assert ErrorDescription.get_message(ErrorDescription.TIMEOUT, "request timed out") == "Request timeout: resource did not respond in time"
     assert ErrorDescription.get_message(ErrorDescription.CONNECTION, "Failed to resolve host") == "DNS error: unable to resolve host"
+
+
+def test_error_description_creates_typed_error_with_context():
+    error = ErrorDescription.create_error(
+        ErrorDescription.TIMEOUT,
+        "request timed out",
+        url="https://example.com",
+    )
+
+    assert isinstance(error, ResourceTimeoutError)
+    assert isinstance(error, ResourceCheckError)
+    assert error.error_type == ErrorDescription.TIMEOUT
+    assert error.url == "https://example.com"
+    assert error.message == "Request timeout: resource did not respond in time"
+
+
+def test_error_description_preserves_original_cause():
+    cause = requests.exceptions.Timeout("request timed out")
+
+    with pytest.raises(ResourceTimeoutError) as caught:
+        ErrorDescription.raise_from(ErrorDescription.TIMEOUT, cause, url="https://example.com")
+
+    assert caught.value.__cause__ is cause
 
 
 def test_check_url_success_returns_status_and_response_time():
@@ -101,6 +125,18 @@ def test_check_url_handles_dns_or_connection_error():
     assert result["result"] is False
     assert result["error_type"] == "connection_error"
     assert result["message"] == "DNS error: unable to resolve host"
+
+
+def test_check_url_handles_connection_error():
+    with patch(
+        "devops_toolkit.checker.requests.get",
+        side_effect=requests.exceptions.ConnectionError("connection refused"),
+    ):
+        result = check_url("http://127.0.0.1:1", timeout=1)
+
+    assert result["result"] is False
+    assert result["error_type"] == "connection_error"
+    assert result["message"] == "Connection error: unable to connect to resource"
 
 
 def test_check_url_handles_ssl_error():

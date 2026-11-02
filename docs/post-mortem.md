@@ -45,6 +45,17 @@ permanent input or resource problem, not a transient connection failure.
   without preserving the distinction between an HTTP response and a transport
   failure.
 
+## Error-management pattern
+
+The checker translates low-level `requests` exceptions into a small hierarchy
+of domain errors in `devops_toolkit.errors`. Each error keeps its category,
+URL, and optional HTTP status. The original exception is preserved with
+exception chaining (`raise ... from error`), so the user-facing result stays
+short while DEBUG logs can retain the technical cause.
+
+This keeps error classification in one place without adding retries or
+recovery behavior that would be inappropriate for every resource check.
+
 ## Scope and limitations
 
 The project does not implement distributed tracing, OpenTelemetry, or a remote

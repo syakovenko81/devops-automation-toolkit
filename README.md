@@ -85,3 +85,9 @@ For on-demand profiling, use the standard Python library:
 ```bash
 PYTHONPATH=src python -m cProfile -s cumulative -m devops_toolkit.checker https://example.com
 ```
+
+The checker converts low-level `requests` exceptions into typed domain errors
+in [`src/devops_toolkit/errors.py`](src/devops_toolkit/errors.py). Each error
+keeps its category and request context, while exception chaining preserves the
+original cause for DEBUG logging. The public `check_url()` result remains a
+small dictionary with a user-friendly message.
